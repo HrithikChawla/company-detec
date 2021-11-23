@@ -1,0 +1,14 @@
+item {
+  id: 1
+  name: ‘person’
+}
+
+item {
+  id: 2
+  name: ‘uniform’
+}
+
+item {
+  id: 3
+  name: ‘text’
+}
