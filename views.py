@@ -61,8 +61,9 @@ def uniform():
 
 
                                 cv2.rectangle(img, (x, y-50), (x + w, y + h+100), (128, 255, 128), 3)
-                        
-                        label1 = pytesseract.image_to_string(crop,config=configs)
+                        for angle in np.arange(0, 180, 30):
+                            rotated = imutils.rotate_bound(img, angle)
+                            label1 = pytesseract.image_to_string(crop,config=configs)
                         var = label1.lower()
                         conn = sqlite3.connect("company.db")
                         cur = conn.cursor()
@@ -72,6 +73,7 @@ def uniform():
                         df
                         keys=[]
                         my_dict = dict(zip(df.Name, df.AdditionalLabel))
+                        
                        
 
                         for key,value in my_dict.items():
@@ -100,14 +102,14 @@ def uniform():
 
 
 
-            cv2.imshow('Video', frames) 
+            cv2.imshow('Video', rotated) 
 
 
         k = cv2.waitKey(30) & 0xff
         if k == 27:
             break
 
-        cv2.imshow('Video', frames)
+        cv2.imshow('Video', rotated)
 
     video_capture.release()
     cv2.destroyAllWindows()
