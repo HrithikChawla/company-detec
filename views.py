@@ -14,6 +14,13 @@ app.secret_key = "UnifromDetection"
 
     
 #Main Code
+import cv2
+import imutils
+import pytesseract
+from pytesseract import Output
+import sqlite3
+import numpy as np
+import pandas as pd
 def uniform():
     haar_upper_body_cascade = cv2.CascadeClassifier(cv2.data.haarcascades+"haarcascade_upperbody.xml")
 
@@ -62,69 +69,72 @@ def uniform():
 
                                 cv2.rectangle(img, (x, y-50), (x + w, y + h+100), (128, 255, 128), 3)
                         for angle in np.arange(0, 180, 30):
-                            rotated = imutils.rotate_bound(img, angle)
-                            label1 = pytesseract.image_to_string(crop,config=configs)
-                        var = label1.lower()
-                        conn = sqlite3.connect("company.db")
-                        cur = conn.cursor()
-                        cur.execute("select * from uniform;")
-                        results = cur.fetchall()
-                        df = pd.read_sql_query("SELECT * FROM uniform", conn)
-                        df
-                        keys=[]
-                        my_dict = dict(zip(df.Name, df.AdditionalLabel))
+                            rotated = imutils.rotate_bound(crop, angle)
+                            label = pytesseract.image_to_string(rotated,config=configs)
                         
+                            var = label.lower()
+                            
+                            conn = sqlite3.connect("company.db")
+                            cur = conn.cursor()
+                            cur.execute("select * from uniform;")
+                            results = cur.fetchall()
+                            df = pd.read_sql_query("SELECT * FROM uniform", conn)
+                            df
+                            keys=[]
+                            my_dict = dict(zip(df.Name, df.AdditionalLabel))
                        
 
-                        for key,value in my_dict.items():
+                            for key,value in my_dict.items():
 
 
 
 
 
-                            if key in var:
+                                if key in var:
 
-                                keys.append(key)
-                                print('name of the company is',keys)
-                                count=0
+                                    keys.append(key)
+                                    print('name of the company is',keys)
+                                    count=0
 
-                            elif value in var:
+                                elif value in var:
 
-                                keys.append(key)
-                                print('name of the company is',keys)
-                                count=0
+                                    keys.append(key)
+                                    print('name of the company is',keys)
+                                    count=0
 
-                            else:
-                                if count < 1:
-                                    print("No delivery guy detected.")
-                                    count+=1
-
-
+                                else:
+                                    if count < 1:
+                                        print("No delivery guy detected.")
+                                        count+=1
 
 
-            cv2.imshow('Video', rotated) 
+
+
+            cv2.imshow('Video', frames) 
 
 
         k = cv2.waitKey(30) & 0xff
         if k == 27:
             break
 
-        cv2.imshow('Video', rotated)
+        cv2.imshow('Video', frames)
 
     video_capture.release()
     cv2.destroyAllWindows()
 uniform() 
+ 
+ 
 
     
     
     
     
-def createFramestoBlob():
+'''def createFramestoBlob():
     
     while True:
         frame=uniform()
         yield (b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')'''
 
 
     
@@ -136,7 +146,7 @@ def createFramestoBlob():
 def index():
 	return render_template('index.html') #render index.html
 
-@app.route('/video_feed')
+'''@app.route('/video_feed')
 def videoStream():
     return Response(createFramestoBlob(),mimetype='multipart/x-mixed-replace; boundary=frame')
 
@@ -153,7 +163,7 @@ def RecieveStreamBlobObject():
         img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
         #convert images to video stream
         ret, jpeg = cv2.imencode('.jpg', img)
-        return jsonify(result=jpeg.tobytes())
+        return jsonify(result=jpeg.tobytes())'''
 
     
 
