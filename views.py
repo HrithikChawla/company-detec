@@ -21,91 +21,99 @@ from pytesseract import Output
 import sqlite3
 import numpy as np
 import pandas as pd
+import cv2
+import imutils
+import pytesseract
+from pytesseract import Output
+import sqlite3
+import numpy as np
+import pandas as pd
 def uniform():
     haar_upper_body_cascade = cv2.CascadeClassifier(cv2.data.haarcascades+"haarcascade_upperbody.xml")
 
 
-    video_capture = cv2.VideoCapture(0)
-
+    cap = cv2.VideoCapture('2.mov')
+    if (cap.isOpened()== False):
+        print("Error opening video stream or file")
 
     count = 0
-    while True:
-        ret,frames = video_capture.read()
-
-
-        gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY) 
-
-        upper_body = haar_upper_body_cascade.detectMultiScale(
-            gray,
-            scaleFactor = 1.01,
-            minNeighbors = 5,
-            minSize = (100, 200), 
-            flags = cv2.CASCADE_SCALE_IMAGE
-        )
-        for (x, y, w, h) in upper_body:
-            var1=cv2.rectangle(frames, (x, y-100), (x + w, y + h+300), (0, 255, 0), 1) # creates green color rectangle with a thickness size of 1
-            cv2.putText(frames, "Person", (x + 5, y + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) # creates green color text with text size of 0.5 & thickness size of 2
-            crop = frames[y-50:y+h+100,x:x+w]
-            if crop.any():
-                        
-
-                        gray,img_bin = cv2.threshold(gray,128,255,cv2.THRESH_BINARY| cv2.THRESH_OTSU)
-                        gray = cv2.bitwise_not(img_bin)
-                        sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-                        sharpen = cv2.filter2D(gray, -1, sharpen_kernel)
-                        kernel =np.ones((1,1),np.uint8)
-                        img =cv2.erode(gray,kernel,iterations=1)
-                        img = cv2.dilate(img,kernel,iterations=1)
-                        configs = '--oem 3 --psm 11/6'
-                        result = pytesseract.image_to_data(img, output_type=Output.DICT,config=configs, lang='eng')
-
-
-                        boxes = len(result['text'])
-                        for sequence_number in range(boxes):
-                            if int(result['conf'][sequence_number]) > 30: 
-                                (x, y, w, h) = (result['left'][sequence_number], result['top'][sequence_number],
-                                                result['width'][sequence_number], result['height'][sequence_number])
-
-
-                                cv2.rectangle(img, (x, y-50), (x + w, y + h+100), (128, 255, 128), 3)
-                        for angle in np.arange(0, 180, 30):
-                            rotated = imutils.rotate_bound(crop, angle)
-                            label = pytesseract.image_to_string(rotated,config=configs)
-                        
-                            var = label.lower()
-                            
-                            conn = sqlite3.connect("company.db")
-                            cur = conn.cursor()
-                            cur.execute("select * from uniform;")
-                            results = cur.fetchall()
-                            df = pd.read_sql_query("SELECT * FROM uniform", conn)
-                            df
-                            keys=[]
-                            my_dict = dict(zip(df.Name, df.AdditionalLabel))
-                       
-
-                            for key,value in my_dict.items():
+    while(cap.isOpened()):
+        ret,frames = cap.read()
+        if ret == True:
 
 
 
+            gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY) 
+
+            upper_body = haar_upper_body_cascade.detectMultiScale(
+                gray,
+                scaleFactor = 1.01,
+                minNeighbors = 5,
+                minSize = (200, 300), 
+                flags = cv2.CASCADE_SCALE_IMAGE
+            )
 
 
-                                if key in var:
+            for (x, y, w, h) in upper_body:
+                var1=cv2.rectangle(frames, (x, y-100), (x + w, y + h+300), (0, 255, 0), 1) # creates green color rectangle with a thickness size of 1
+                cv2.putText(frames, "Person", (x + 5, y + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) # creates green color text with text size of 0.5 & thickness size of 2
+                crop = frames[y-50:y+h+100,x:x+w]
+                if crop.any():
+                    gray,img_bin = cv2.threshold(gray,128,255,cv2.THRESH_BINARY| cv2.THRESH_OTSU)
+                    gray = cv2.bitwise_not(img_bin)
+                    sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+                    sharpen = cv2.filter2D(gray, -1, sharpen_kernel)
+                    kernel =np.ones((1,1),np.uint8)
+                    img =cv2.erode(gray,kernel,iterations=1)
+                    img = cv2.dilate(img,kernel,iterations=1)
+                    configs = '--oem 3 --psm 11/6'
+                    result = pytesseract.image_to_data(img, output_type=Output.DICT,config=configs, lang='eng')
 
-                                    keys.append(key)
-                                    print('name of the company is',keys)
-                                    count=0
 
-                                elif value in var:
+                    boxes = len(result['text'])
+                    for sequence_number in range(boxes):
+                        if int(result['conf'][sequence_number]) > 30: 
+                            (x, y, w, h) = (result['left'][sequence_number], result['top'][sequence_number],
+                                            result['width'][sequence_number], result['height'][sequence_number])
 
-                                    keys.append(key)
-                                    print('name of the company is',keys)
-                                    count=0
 
-                                else:
-                                    if count < 1:
-                                        print("No delivery guy detected.")
-                                        count+=1
+                            cv2.rectangle(img, (x, y-50), (x + w, y + h+100), (128, 255, 128), 3)
+                    for angle in np.arange(0, 180, 30):
+                        rotated = imutils.rotate_bound(crop, angle)
+                        label1 = pytesseract.image_to_string(frames,config=configs)
+                        var = label1.lower()
+                    conn = sqlite3.connect("company.db")
+                    cur = conn.cursor()
+                    cur.execute("select * from uniform;")
+                    results = cur.fetchall()
+                    df = pd.read_sql_query("SELECT * FROM uniform", conn)
+                    df
+                    keys=[]
+                    my_dict = dict(zip(df.Name, df.AdditionalLabel))
+
+
+                    for key,value in my_dict.items():
+
+
+
+
+
+                        if key in var:
+
+                            keys.append(key)
+                            print('name of the company is',keys)
+                            count=0
+
+                        elif value in var:
+
+                            keys.append(key)
+                            print('name of the company is',keys)
+                            count=0
+
+                        else:
+                            if count < 1:
+                                print("No delivery guy detected.")
+                                count+=1
 
 
 
@@ -119,9 +127,9 @@ def uniform():
 
         cv2.imshow('Video', frames)
 
-    video_capture.release()
+    cap.release()
     cv2.destroyAllWindows()
-uniform() 
+uniform()  
  
  
 
